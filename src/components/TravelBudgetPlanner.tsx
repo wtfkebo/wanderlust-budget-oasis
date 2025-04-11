@@ -5,18 +5,9 @@ import { useToast } from '@/hooks/use-toast';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { 
   DollarSign, Bed, Utensils, Bus, Ticket, 
-  Wallet, TrendingUp, Calendar, Search, Tag 
+  Search, Tag 
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-
-// Budget categories with their default percentages
-const BUDGET_CATEGORIES = [
-  { name: 'Accommodation', percentage: 0.35, color: '#4ecdc4', icon: Bed },
-  { name: 'Food', percentage: 0.30, color: '#ff6b6b', icon: Utensils },
-  { name: 'Transportation', percentage: 0.15, color: '#ffe66d', icon: Bus },
-  { name: 'Activities', percentage: 0.15, color: '#1a535c', icon: Ticket },
-  { name: 'Miscellaneous', percentage: 0.05, color: '#6c757d', icon: DollarSign }
-];
 
 const TravelBudgetPlanner: React.FC = () => {
   const { toast } = useToast();
@@ -26,11 +17,6 @@ const TravelBudgetPlanner: React.FC = () => {
   const [destinationId, setDestinationId] = useState<string>('bali');
   const [days, setDays] = useState<number>(7);
   
-  // Savings tracker state
-  const [savedAmount, setSavedAmount] = useState<number>(0);
-  const [savingPerMonth, setSavingPerMonth] = useState<number>(200);
-  const [savingGoalDate, setSavingGoalDate] = useState<Date | null>(null);
-  
   // Activity filter state
   const [filter, setFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -38,25 +24,6 @@ const TravelBudgetPlanner: React.FC = () => {
   // Results state
   const [planCreated, setPlanCreated] = useState<boolean>(false);
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
-  
-  // Calculate the savings goal date
-  React.useEffect(() => {
-    if (!planCreated) return;
-    
-    if (savedAmount >= budget) {
-      // Already saved enough
-      setSavingGoalDate(new Date());
-      return;
-    }
-    
-    const remainingAmount = budget - savedAmount;
-    const monthsNeeded = Math.ceil(remainingAmount / savingPerMonth);
-    
-    const goalDate = new Date();
-    goalDate.setMonth(goalDate.getMonth() + monthsNeeded);
-    
-    setSavingGoalDate(goalDate);
-  }, [savedAmount, budget, savingPerMonth, planCreated]);
   
   // Handle budget form submission
   const handleBudgetSubmit = (e: React.FormEvent) => {
@@ -82,23 +49,75 @@ const TravelBudgetPlanner: React.FC = () => {
     });
   };
   
-  // Calculate progress percentage for savings tracker
-  const progressPercentage = Math.min(Math.round((savedAmount / budget) * 100), 100);
-  
-  // Format date to readable string
-  const formatDate = (date: Date | null) => {
-    if (!date) return '';
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long'
-    });
+  // Calculate budget distribution based on destination's cost of living
+  const getBudgetDistribution = () => {
+    if (!selectedDestination) return [];
+    
+    // Get average costs for this destination
+    const { accommodation, food, transportation } = selectedDestination.averageCosts;
+    
+    // Calculate the relative costs
+    const totalDailyCost = accommodation.mid + food.mid + transportation.mid;
+    
+    // Calculate percentages based on destination's cost of living
+    const accommodationPercent = accommodation.mid / totalDailyCost;
+    const foodPercent = food.mid / totalDailyCost;
+    const transportationPercent = transportation.mid / totalDailyCost;
+    
+    // Activities and miscellaneous get the remaining percentage
+    const activitiesPercent = 0.15; // Fixed at 15%
+    const miscPercent = 1 - (accommodationPercent + foodPercent + transportationPercent + activitiesPercent);
+    
+    return [
+      { 
+        name: 'Accommodation', 
+        percentage: accommodationPercent, 
+        value: Math.round(budget * accommodationPercent),
+        color: '#4ecdc4', 
+        icon: Bed 
+      },
+      { 
+        name: 'Food', 
+        percentage: foodPercent, 
+        value: Math.round(budget * foodPercent),
+        color: '#ff6b6b', 
+        icon: Utensils 
+      },
+      { 
+        name: 'Transportation', 
+        percentage: transportationPercent, 
+        value: Math.round(budget * transportationPercent),
+        color: '#ffe66d', 
+        icon: Bus 
+      },
+      { 
+        name: 'Activities', 
+        percentage: activitiesPercent, 
+        value: Math.round(budget * activitiesPercent),
+        color: '#1a535c', 
+        icon: Ticket 
+      },
+      { 
+        name: 'Miscellaneous', 
+        percentage: miscPercent, 
+        value: Math.round(budget * miscPercent),
+        color: '#6c757d', 
+        icon: DollarSign 
+      }
+    ];
   };
   
   // Determine accommodation level based on daily budget
   const getAccommodationLevel = () => {
     if (!selectedDestination) return '';
     
-    const dailyAccommodation = (budget * 0.35) / days;
+    const distribution = getBudgetDistribution();
+    const accommodationEntry = distribution.find(item => item.name === 'Accommodation');
+    
+    if (!accommodationEntry) return '';
+    
+    const dailyAccommodation = accommodationEntry.value / days;
+    
     if (dailyAccommodation <= selectedDestination.averageCosts.accommodation.budget) {
       return 'Budget (hostels, guesthouses)';
     } else if (dailyAccommodation <= selectedDestination.averageCosts.accommodation.mid) {
@@ -112,7 +131,13 @@ const TravelBudgetPlanner: React.FC = () => {
   const getFoodLevel = () => {
     if (!selectedDestination) return '';
     
-    const dailyFood = (budget * 0.30) / days;
+    const distribution = getBudgetDistribution();
+    const foodEntry = distribution.find(item => item.name === 'Food');
+    
+    if (!foodEntry) return '';
+    
+    const dailyFood = foodEntry.value / days;
+    
     if (dailyFood <= selectedDestination.averageCosts.food.budget) {
       return 'Street food, local eateries';
     } else if (dailyFood <= selectedDestination.averageCosts.food.mid) {
@@ -122,45 +147,13 @@ const TravelBudgetPlanner: React.FC = () => {
     }
   };
   
-  // Generate savings tips based on the monthly saving target
-  const getSavingsTips = () => {
-    if (savingPerMonth < 100) {
-      return [
-        "Make coffee at home instead of buying at cafes",
-        "Cancel unused subscriptions",
-        "Cook meals at home more often",
-        "Use public transportation instead of rideshares"
-      ];
-    } else if (savingPerMonth < 300) {
-      return [
-        "Create a weekly budget and stick to it",
-        "Consider a temporary side gig",
-        "Reduce dining out to once a week",
-        "Look for cheaper phone/internet plans"
-      ];
-    } else {
-      return [
-        "Set up automatic transfers to your savings account",
-        "Consider temporary lifestyle adjustments",
-        "Look for opportunities to increase your income",
-        "Delay other major purchases until after your trip"
-      ];
-    }
-  };
-  
-  // Chart data for budget breakdown
-  const chartData = BUDGET_CATEGORIES.map(category => ({
-    name: category.name,
-    value: Math.round(budget * category.percentage),
-    color: category.color,
-    icon: category.icon
-  }));
-  
   // Filter activities based on selected category and search term
   const getFilteredActivities = () => {
     if (!selectedDestination) return [];
     
-    const activityBudget = budget * 0.15;
+    const distribution = getBudgetDistribution();
+    const activitiesEntry = distribution.find(item => item.name === 'Activities');
+    const activityBudget = activitiesEntry ? activitiesEntry.value : budget * 0.15;
     
     const filteredActivities = selectedDestination.averageCosts.activities.filter(activity => {
       const matchesCategory = filter === 'all' || activity.category === filter;
@@ -326,7 +319,7 @@ const TravelBudgetPlanner: React.FC = () => {
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
-                            data={chartData}
+                            data={getBudgetDistribution()}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
@@ -334,7 +327,7 @@ const TravelBudgetPlanner: React.FC = () => {
                             dataKey="value"
                             label={({ name, value }) => `${name}: $${value}`}
                           >
-                            {chartData.map((entry, index) => (
+                            {getBudgetDistribution().map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
@@ -369,11 +362,22 @@ const TravelBudgetPlanner: React.FC = () => {
                         <div>
                           <h4 className="font-medium">Transportation</h4>
                           <p className="text-sm text-muted-foreground">
-                            {(budget * 0.15) / days <= selectedDestination.averageCosts.transportation.budget
-                              ? 'Public transportation, shared rides'
-                              : (budget * 0.15) / days <= selectedDestination.averageCosts.transportation.mid
-                              ? 'Mix of public and private transportation'
-                              : 'Private transportation, taxis'}
+                            {(() => {
+                              const distribution = getBudgetDistribution();
+                              const transportationEntry = distribution.find(item => item.name === 'Transportation');
+                              
+                              if (!transportationEntry) return '';
+                              
+                              const dailyTransportation = transportationEntry.value / days;
+                              
+                              if (dailyTransportation <= selectedDestination.averageCosts.transportation.budget) {
+                                return 'Public transportation, shared rides';
+                              } else if (dailyTransportation <= selectedDestination.averageCosts.transportation.mid) {
+                                return 'Mix of public and private transportation';
+                              } else {
+                                return 'Private transportation, taxis';
+                              }
+                            })()}
                           </p>
                         </div>
                       </div>
@@ -383,7 +387,13 @@ const TravelBudgetPlanner: React.FC = () => {
                         <div>
                           <h4 className="font-medium">Activities</h4>
                           <p className="text-sm text-muted-foreground">
-                            {`You can afford approximately ${Math.floor((budget * 0.15) / selectedDestination.averageCosts.activities.reduce((acc, act) => acc + act.cost, 0) * selectedDestination.averageCosts.activities.length)} activities from our recommendations.`}
+                            {(() => {
+                              const distribution = getBudgetDistribution();
+                              const activitiesEntry = distribution.find(item => item.name === 'Activities');
+                              const activityBudget = activitiesEntry ? activitiesEntry.value : budget * 0.15;
+                              
+                              return `You can afford approximately ${Math.floor((activityBudget) / selectedDestination.averageCosts.activities.reduce((acc, act) => acc + act.cost, 0) * selectedDestination.averageCosts.activities.length)} activities from our recommendations.`;
+                            })()}
                           </p>
                         </div>
                       </div>
@@ -474,137 +484,55 @@ const TravelBudgetPlanner: React.FC = () => {
                 
                 <div className="space-y-4">
                   {getFilteredActivities().length > 0 ? (
-                    getFilteredActivities().map((activity, index) => (
-                      <div 
-                        key={index} 
-                        className={`p-4 rounded-lg border ${
-                          activity.cost <= budget * 0.15
-                            ? 'border-teal/20 bg-teal/5' 
-                            : 'border-gray-200 bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium text-lg">{activity.name}</h3>
-                            <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
-                            <div className="flex items-center mt-2 gap-2">
-                              <span className={`px-2 py-1 rounded-full text-xs ${categoryColors[activity.category]}`}>
-                                {activity.category.charAt(0).toUpperCase() + activity.category.slice(1)}
-                              </span>
+                    getFilteredActivities().map((activity, index) => {
+                      const distribution = getBudgetDistribution();
+                      const activitiesEntry = distribution.find(item => item.name === 'Activities');
+                      const activityBudget = activitiesEntry ? activitiesEntry.value : budget * 0.15;
+                      
+                      return (
+                        <div 
+                          key={index} 
+                          className={`p-4 rounded-lg border ${
+                            activity.cost <= activityBudget
+                              ? 'border-teal/20 bg-teal/5' 
+                              : 'border-gray-200 bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium text-lg">{activity.name}</h3>
+                              <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
+                              <div className="flex items-center mt-2 gap-2">
+                                <span className={`px-2 py-1 rounded-full text-xs ${categoryColors[activity.category]}`}>
+                                  {activity.category.charAt(0).toUpperCase() + activity.category.slice(1)}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <span className={`font-bold text-lg ${
-                              activity.cost <= budget * 0.15 ? 'text-teal' : 'text-gray-400'
-                            }`}>
-                              ${activity.cost}
-                            </span>
-                            <div className="mt-1">
-                              {activity.cost === 0 ? (
-                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Free</span>
-                              ) : activity.cost <= budget * 0.15 ? (
-                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Within Budget</span>
-                              ) : (
-                                <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">Over Budget</span>
-                              )}
+                            <div className="text-right">
+                              <span className={`font-bold text-lg ${
+                                activity.cost <= activityBudget ? 'text-teal' : 'text-gray-400'
+                              }`}>
+                                ${activity.cost}
+                              </span>
+                              <div className="mt-1">
+                                {activity.cost === 0 ? (
+                                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Free</span>
+                                ) : activity.cost <= activityBudget ? (
+                                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Within Budget</span>
+                                ) : (
+                                  <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">Over Budget</span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       No activities found matching your criteria.
                     </div>
                   )}
-                </div>
-              </div>
-              
-              {/* Savings Tracker */}
-              <div className="card">
-                <h2 className="text-2xl font-bold mb-6 text-center">Savings Tracker</h2>
-                
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-                    <Wallet className="w-5 h-5 text-teal" />
-                    <span>Your Trip to {selectedDestination.name}</span>
-                  </h3>
-                  
-                  <div className="mt-4 space-y-6">
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span>Savings Progress</span>
-                        <span>${savedAmount} of ${budget}</span>
-                      </div>
-                      <Progress value={progressPercentage} className="h-2" />
-                      <div className="mt-2 text-sm text-right text-muted-foreground">
-                        {progressPercentage}% saved
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="savedAmount" className="block mb-2 font-medium">
-                          Current Savings ($)
-                        </label>
-                        <input
-                          type="number"
-                          id="savedAmount"
-                          value={savedAmount}
-                          onChange={(e) => setSavedAmount(Number(e.target.value))}
-                          className="input-field"
-                          min="0"
-                          max={budget}
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="savingPerMonth" className="block mb-2 font-medium">
-                          Amount You Can Save Monthly ($)
-                        </label>
-                        <input
-                          type="number"
-                          id="savingPerMonth"
-                          value={savingPerMonth}
-                          onChange={(e) => setSavingPerMonth(Number(e.target.value))}
-                          className="input-field"
-                          min="1"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="bg-muted p-4 rounded-lg flex items-center gap-3">
-                      <Calendar className="w-6 h-6 text-teal shrink-0" />
-                      <div>
-                        <p className="font-medium">Estimated Goal Date</p>
-                        <p className="text-sm text-muted-foreground">
-                          {savingGoalDate ? (
-                            progressPercentage === 100 
-                              ? "You've already saved enough! Start planning your trip!" 
-                              : `You'll reach your goal by ${formatDate(savingGoalDate)}`
-                          ) : 'Set your savings to calculate goal date'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-8">
-                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-teal" />
-                    <span>Savings Tips</span>
-                  </h3>
-                  
-                  <div className="bg-teal/5 p-4 rounded-lg border border-teal/20">
-                    <p className="mb-3">
-                      Here are some ways to help you save ${savingPerMonth}/month for your trip:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {getSavingsTips().map((tip, index) => (
-                        <li key={index}>{tip}</li>
-                      ))}
-                    </ul>
-                  </div>
                 </div>
               </div>
             </>

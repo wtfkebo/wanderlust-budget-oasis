@@ -10,30 +10,78 @@ interface BudgetBreakdownProps {
   days: number;
 }
 
-// Define budget categories and their default percentages
-const BUDGET_CATEGORIES = [
-  { name: 'Accommodation', percentage: 0.35, color: '#4ecdc4', icon: Bed },
-  { name: 'Food', percentage: 0.30, color: '#ff6b6b', icon: Utensils },
-  { name: 'Transportation', percentage: 0.15, color: '#ffe66d', icon: Bus },
-  { name: 'Activities', percentage: 0.15, color: '#1a535c', icon: Ticket },
-  { name: 'Miscellaneous', percentage: 0.05, color: '#6c757d', icon: DollarSign }
-];
-
 const BudgetBreakdown: React.FC<BudgetBreakdownProps> = ({ destination, budget, days }) => {
   // Calculate daily budget
   const dailyBudget = budget / days;
   
+  // Calculate budget distribution based on destination's cost of living
+  const getBudgetDistribution = () => {
+    // Get average costs for this destination
+    const { accommodation, food, transportation } = destination.averageCosts;
+    
+    // Calculate the relative costs
+    const totalDailyCost = accommodation.mid + food.mid + transportation.mid;
+    
+    // Calculate percentages based on destination's cost of living
+    const accommodationPercent = accommodation.mid / totalDailyCost;
+    const foodPercent = food.mid / totalDailyCost;
+    const transportationPercent = transportation.mid / totalDailyCost;
+    
+    // Activities and miscellaneous get the remaining percentage
+    const activitiesPercent = 0.15; // Fixed at 15%
+    const miscPercent = 1 - (accommodationPercent + foodPercent + transportationPercent + activitiesPercent);
+    
+    return [
+      { 
+        name: 'Accommodation', 
+        percentage: accommodationPercent, 
+        value: Math.round(budget * accommodationPercent),
+        color: '#4ecdc4', 
+        icon: Bed 
+      },
+      { 
+        name: 'Food', 
+        percentage: foodPercent, 
+        value: Math.round(budget * foodPercent),
+        color: '#ff6b6b', 
+        icon: Utensils 
+      },
+      { 
+        name: 'Transportation', 
+        percentage: transportationPercent, 
+        value: Math.round(budget * transportationPercent),
+        color: '#ffe66d', 
+        icon: Bus 
+      },
+      { 
+        name: 'Activities', 
+        percentage: activitiesPercent, 
+        value: Math.round(budget * activitiesPercent),
+        color: '#1a535c', 
+        icon: Ticket 
+      },
+      { 
+        name: 'Miscellaneous', 
+        percentage: miscPercent, 
+        value: Math.round(budget * miscPercent),
+        color: '#6c757d', 
+        icon: DollarSign 
+      }
+    ];
+  };
+  
   // Create data for pie chart
-  const chartData = BUDGET_CATEGORIES.map(category => ({
-    name: category.name,
-    value: Math.round(budget * category.percentage),
-    color: category.color,
-    icon: category.icon
-  }));
+  const chartData = getBudgetDistribution();
   
   // Determine accommodation level based on daily budget
   const getAccommodationLevel = () => {
-    const dailyAccommodation = (budget * 0.35) / days;
+    const distribution = getBudgetDistribution();
+    const accommodationEntry = distribution.find(item => item.name === 'Accommodation');
+    
+    if (!accommodationEntry) return '';
+    
+    const dailyAccommodation = accommodationEntry.value / days;
+    
     if (dailyAccommodation <= destination.averageCosts.accommodation.budget) {
       return 'Budget (hostels, guesthouses)';
     } else if (dailyAccommodation <= destination.averageCosts.accommodation.mid) {
@@ -45,7 +93,13 @@ const BudgetBreakdown: React.FC<BudgetBreakdownProps> = ({ destination, budget, 
   
   // Determine food level based on daily budget
   const getFoodLevel = () => {
-    const dailyFood = (budget * 0.30) / days;
+    const distribution = getBudgetDistribution();
+    const foodEntry = distribution.find(item => item.name === 'Food');
+    
+    if (!foodEntry) return '';
+    
+    const dailyFood = foodEntry.value / days;
+    
     if (dailyFood <= destination.averageCosts.food.budget) {
       return 'Street food, local eateries';
     } else if (dailyFood <= destination.averageCosts.food.mid) {
@@ -127,11 +181,22 @@ const BudgetBreakdown: React.FC<BudgetBreakdownProps> = ({ destination, budget, 
               <div>
                 <h4 className="font-medium">Transportation</h4>
                 <p className="text-sm text-muted-foreground">
-                  {(budget * 0.15) / days <= destination.averageCosts.transportation.budget
-                    ? 'Public transportation, shared rides'
-                    : (budget * 0.15) / days <= destination.averageCosts.transportation.mid
-                    ? 'Mix of public and private transportation'
-                    : 'Private transportation, taxis'}
+                  {(() => {
+                    const distribution = getBudgetDistribution();
+                    const transportationEntry = distribution.find(item => item.name === 'Transportation');
+                    
+                    if (!transportationEntry) return '';
+                    
+                    const dailyTransportation = transportationEntry.value / days;
+                    
+                    if (dailyTransportation <= destination.averageCosts.transportation.budget) {
+                      return 'Public transportation, shared rides';
+                    } else if (dailyTransportation <= destination.averageCosts.transportation.mid) {
+                      return 'Mix of public and private transportation';
+                    } else {
+                      return 'Private transportation, taxis';
+                    }
+                  })()}
                 </p>
               </div>
             </div>
@@ -141,7 +206,13 @@ const BudgetBreakdown: React.FC<BudgetBreakdownProps> = ({ destination, budget, 
               <div>
                 <h4 className="font-medium">Activities</h4>
                 <p className="text-sm text-muted-foreground">
-                  {`You can afford approximately ${Math.floor((budget * 0.15) / destination.averageCosts.activities.reduce((acc, act) => acc + act.cost, 0) * destination.averageCosts.activities.length)} activities from our recommendations.`}
+                  {(() => {
+                    const distribution = getBudgetDistribution();
+                    const activitiesEntry = distribution.find(item => item.name === 'Activities');
+                    const activityBudget = activitiesEntry ? activitiesEntry.value : budget * 0.15;
+                    
+                    return `You can afford approximately ${Math.floor((activityBudget) / destination.averageCosts.activities.reduce((acc, act) => acc + act.cost, 0) * destination.averageCosts.activities.length)} activities from our recommendations.`;
+                  })()}
                 </p>
               </div>
             </div>
