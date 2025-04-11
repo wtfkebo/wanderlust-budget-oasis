@@ -53,3 +53,16 @@ export const formatCurrency = (amount: number, countryData: CountryInfo | undefi
   const symbol = getCurrencySymbol(countryData);
   return `${symbol}${amount.toLocaleString()}`;
 };
+
+// Add Country Type for type safety in the application
+export interface CountryType {
+  currency?: string;
+  currencyCode?: string;
+  currencySymbol?: string;
+  flagUrl?: string;
+  capital?: string;
+  languages?: string[];
+  population?: number;
+  region?: string;
+  exchangeRate?: number;
+}

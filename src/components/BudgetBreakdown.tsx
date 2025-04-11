@@ -3,12 +3,11 @@ import React, { useState } from 'react';
 import { Destination } from '../data/destinations';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, 
-  Legend, Tooltip, Sector, AreaChart, Area, 
-  XAxis, YAxis, CartesianGrid 
+  Legend, Tooltip, Sector
 } from 'recharts';
 import { 
   DollarSign, Bed, Utensils, Bus, Ticket, 
-  TrendingUp, RefreshCw, Landmark, User
+  Landmark, User
 } from 'lucide-react';
 
 interface BudgetBreakdownProps {
@@ -82,13 +81,6 @@ const BudgetBreakdown: React.FC<BudgetBreakdownProps> = ({ destination, budget, 
   
   // Create data for pie chart
   const chartData = getBudgetDistribution();
-  
-  // Trend data for cost projection (simulated)
-  const trendData = Array.from({ length: days }).map((_, index) => ({
-    day: index + 1,
-    projected: Math.round(dailyBudget * (1 - Math.random() * 0.2)),
-    actual: index < days / 2 ? Math.round(dailyBudget * (1 - Math.random() * 0.3)) : null
-  }));
   
   // Custom active shape for pie chart
   const renderActiveShape = (props: any) => {
@@ -176,205 +168,176 @@ const BudgetBreakdown: React.FC<BudgetBreakdownProps> = ({ destination, budget, 
   };
   
   return (
-    <div className="card mt-8 backdrop-blur-sm bg-white/90 border border-gray-100 shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-center bg-gradient-to-r from-teal to-blue-500 bg-clip-text text-transparent">Your Budget Breakdown</h2>
-      
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold mb-2">Budget Summary</h3>
+    <div className="card backdrop-blur-sm bg-white/80 border border-gray-100 shadow-xl rounded-xl overflow-hidden">
+      <div className="p-6 bg-gradient-to-br from-teal/5 to-blue-500/10">
+        <h2 className="text-2xl font-bold mb-6 text-center bg-gradient-to-r from-teal to-blue-500 bg-clip-text text-transparent">Your Budget Breakdown</h2>
         
-        <div className="flex justify-center mb-4">
-          <div className="inline-flex rounded-md shadow-sm" role="group">
-            <button
-              type="button"
-              className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
-                selectedBudgetType === 'total' 
-                  ? 'bg-teal text-white' 
-                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }`}
-              onClick={() => setSelectedBudgetType('total')}
-            >
-              Total Budget
-            </button>
-            <button
-              type="button"
-              className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
-                selectedBudgetType === 'daily' 
-                  ? 'bg-teal text-white' 
-                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }`}
-              onClick={() => setSelectedBudgetType('daily')}
-            >
-              Daily Budget
-            </button>
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">Budget Summary</h3>
+          
+          <div className="flex justify-center mb-4">
+            <div className="inline-flex rounded-md shadow-sm" role="group">
+              <button
+                type="button"
+                className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
+                  selectedBudgetType === 'total' 
+                    ? 'bg-teal text-white' 
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+                onClick={() => setSelectedBudgetType('total')}
+              >
+                Total Budget
+              </button>
+              <button
+                type="button"
+                className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
+                  selectedBudgetType === 'daily' 
+                    ? 'bg-teal text-white' 
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+                onClick={() => setSelectedBudgetType('daily')}
+              >
+                Daily Budget
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div className="bg-gradient-to-br from-teal/10 to-blue-500/10 p-4 rounded-lg shadow-sm border border-teal/20">
+              <p className="text-sm text-gray-600">Total Budget</p>
+              <p className="text-2xl font-bold text-navy">${budget.toLocaleString()}</p>
+            </div>
+            <div className="bg-gradient-to-br from-teal/10 to-blue-500/10 p-4 rounded-lg shadow-sm border border-teal/20">
+              <p className="text-sm text-gray-600">Daily Budget</p>
+              <p className="text-2xl font-bold text-navy">${Math.round(dailyBudget).toLocaleString()}/day</p>
+            </div>
+            <div className="bg-gradient-to-br from-teal/10 to-blue-500/10 p-4 rounded-lg shadow-sm border border-teal/20">
+              <p className="text-sm text-gray-600">Trip Duration</p>
+              <p className="text-2xl font-bold text-navy">{days} days</p>
+            </div>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          <div className="bg-gradient-to-br from-teal/10 to-blue-500/10 p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-600">Total Budget</p>
-            <p className="text-2xl font-bold text-navy">${budget.toLocaleString()}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <h3 className="text-xl font-semibold mb-4 flex items-center">
+              <DollarSign className="w-5 h-5 mr-2 text-teal" />
+              Budget Allocation
+            </h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    activeIndex={activeIndex}
+                    activeShape={renderActiveShape}
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    dataKey="value"
+                    onMouseEnter={onPieEnter}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                  <Legend 
+                    iconType="circle" 
+                    layout="horizontal" 
+                    verticalAlign="bottom" 
+                    align="center"
+                    formatter={(value, entry) => (
+                      <span style={{ color: '#333', fontWeight: 500 }}>{value}</span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="bg-gradient-to-br from-teal/10 to-blue-500/10 p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-600">Daily Budget</p>
-            <p className="text-2xl font-bold text-navy">${Math.round(dailyBudget).toLocaleString()}/day</p>
-          </div>
-          <div className="bg-gradient-to-br from-teal/10 to-blue-500/10 p-4 rounded-lg shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-600">Trip Duration</p>
-            <p className="text-2xl font-bold text-navy">{days} days</p>
+          
+          <div>
+            <h3 className="text-xl font-semibold mb-4 flex items-center">
+              <User className="w-5 h-5 mr-2 text-teal" />
+              What You Can Expect
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-teal/5 border border-teal/10">
+                <Bed className="w-5 h-5 mt-1 text-teal" />
+                <div>
+                  <h4 className="font-medium">Accommodation</h4>
+                  <p className="text-sm text-gray-600">{getAccommodationLevel()}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-orange/5 border border-orange/10">
+                <Utensils className="w-5 h-5 mt-1 text-orange" />
+                <div>
+                  <h4 className="font-medium">Food</h4>
+                  <p className="text-sm text-gray-600">{getFoodLevel()}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow/5 border border-yellow/10">
+                <Bus className="w-5 h-5 mt-1 text-yellow" />
+                <div>
+                  <h4 className="font-medium">Transportation</h4>
+                  <p className="text-sm text-gray-600">
+                    {(() => {
+                      const distribution = getBudgetDistribution();
+                      const transportationEntry = distribution.find(item => item.name === 'Transportation');
+                      
+                      if (!transportationEntry) return '';
+                      
+                      const dailyTransportation = transportationEntry.value / (selectedBudgetType === 'total' ? days : 1);
+                      
+                      if (dailyTransportation <= destination.averageCosts.transportation.budget) {
+                        return 'Public transportation, shared rides';
+                      } else if (dailyTransportation <= destination.averageCosts.transportation.mid) {
+                        return 'Mix of public and private transportation';
+                      } else {
+                        return 'Private transportation, taxis';
+                      }
+                    })()}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-navy/5 border border-navy/10">
+                <Ticket className="w-5 h-5 mt-1 text-navy" />
+                <div>
+                  <h4 className="font-medium">Activities</h4>
+                  <p className="text-sm text-gray-600">
+                    {(() => {
+                      const distribution = getBudgetDistribution();
+                      const activitiesEntry = distribution.find(item => item.name === 'Activities');
+                      const activityBudget = activitiesEntry ? activitiesEntry.value : budget * 0.15;
+                      
+                      return `You can afford approximately ${Math.floor((activityBudget) / destination.averageCosts.activities.reduce((acc, act) => acc + act.cost, 0) * destination.averageCosts.activities.length)} activities from our recommendations.`;
+                    })()}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <h3 className="text-xl font-semibold mb-4 flex items-center">
-            <DollarSign className="w-5 h-5 mr-2 text-teal" />
-            Budget Allocation
+      {destination.currency && (
+        <div className="p-4 bg-gradient-to-r from-teal/10 to-blue-500/10 border-t border-gray-100">
+          <h3 className="text-lg font-semibold mb-2 flex items-center">
+            <Landmark className="w-5 h-5 mr-2 text-teal" />
+            Local Currency & Exchange
           </h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  activeIndex={activeIndex}
-                  activeShape={renderActiveShape}
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  dataKey="value"
-                  onMouseEnter={onPieEnter}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                <Legend 
-                  iconType="circle" 
-                  layout="horizontal" 
-                  verticalAlign="bottom" 
-                  align="center"
-                  formatter={(value, entry) => (
-                    <span style={{ color: '#333', fontWeight: 500 }}>{value}</span>
-                  )}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <p className="text-sm text-gray-600">
+            Local currency: <span className="font-medium">{destination.currency}</span> 
+            {destination.exchangeRate && (
+              <> • Exchange rate: <span className="font-medium">1 USD ≈ {destination.exchangeRate} {destination.currencyCode || ''}</span></>
+            )}
+          </p>
         </div>
-        
-        <div>
-          <h3 className="text-xl font-semibold mb-4 flex items-center">
-            <User className="w-5 h-5 mr-2 text-teal" />
-            What You Can Expect
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-teal/5 border border-teal/10">
-              <Bed className="w-5 h-5 mt-1 text-teal" />
-              <div>
-                <h4 className="font-medium">Accommodation</h4>
-                <p className="text-sm text-gray-600">{getAccommodationLevel()}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-orange/5 border border-orange/10">
-              <Utensils className="w-5 h-5 mt-1 text-orange" />
-              <div>
-                <h4 className="font-medium">Food</h4>
-                <p className="text-sm text-gray-600">{getFoodLevel()}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-yellow/5 border border-yellow/10">
-              <Bus className="w-5 h-5 mt-1 text-yellow" />
-              <div>
-                <h4 className="font-medium">Transportation</h4>
-                <p className="text-sm text-gray-600">
-                  {(() => {
-                    const distribution = getBudgetDistribution();
-                    const transportationEntry = distribution.find(item => item.name === 'Transportation');
-                    
-                    if (!transportationEntry) return '';
-                    
-                    const dailyTransportation = transportationEntry.value / (selectedBudgetType === 'total' ? days : 1);
-                    
-                    if (dailyTransportation <= destination.averageCosts.transportation.budget) {
-                      return 'Public transportation, shared rides';
-                    } else if (dailyTransportation <= destination.averageCosts.transportation.mid) {
-                      return 'Mix of public and private transportation';
-                    } else {
-                      return 'Private transportation, taxis';
-                    }
-                  })()}
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-navy/5 border border-navy/10">
-              <Ticket className="w-5 h-5 mt-1 text-navy" />
-              <div>
-                <h4 className="font-medium">Activities</h4>
-                <p className="text-sm text-gray-600">
-                  {(() => {
-                    const distribution = getBudgetDistribution();
-                    const activitiesEntry = distribution.find(item => item.name === 'Activities');
-                    const activityBudget = activitiesEntry ? activitiesEntry.value : budget * 0.15;
-                    
-                    return `You can afford approximately ${Math.floor((activityBudget) / destination.averageCosts.activities.reduce((acc, act) => acc + act.cost, 0) * destination.averageCosts.activities.length)} activities from our recommendations.`;
-                  })()}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4 flex items-center">
-          <TrendingUp className="w-5 h-5 mr-2 text-teal" />
-          Expense Projection
-        </h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={trendData}
-              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" label={{ value: 'Day', position: 'insideBottomRight', offset: -5 }} />
-              <YAxis label={{ value: 'Budget ($)', angle: -90, position: 'insideLeft' }} />
-              <Tooltip formatter={(value) => `$${value}`} />
-              <Legend />
-              <Area type="monotone" dataKey="projected" stackId="1" stroke="#4ecdc4" fill="#4ecdc4" name="Projected" />
-              <Area type="monotone" dataKey="actual" stackId="2" stroke="#ff6b6b" fill="#ff6b6b" name="Actual" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-      
-      <div className="mt-8 p-4 bg-gradient-to-r from-teal/10 to-blue-500/10 rounded-lg border border-gray-100">
-        <h3 className="text-lg font-semibold mb-2 flex items-center">
-          <Landmark className="w-5 h-5 mr-2 text-teal" />
-          Local Currency & Exchange
-        </h3>
-        <p className="text-sm text-gray-600">
-          {destination.currency ? (
-            <>
-              Local currency: <span className="font-medium">{destination.currency}</span> 
-              {destination.exchangeRate && (
-                <> • Exchange rate: <span className="font-medium">1 USD ≈ {destination.exchangeRate} {destination.currencyCode || ''}</span></>
-              )}
-            </>
-          ) : (
-            'Currency information not available'
-          )}
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          <RefreshCw className="w-3 h-3 inline mr-1" /> 
-          Exchange rates updated daily. Budget calculations are shown in USD.
-        </p>
-      </div>
+      )}
     </div>
   );
 };

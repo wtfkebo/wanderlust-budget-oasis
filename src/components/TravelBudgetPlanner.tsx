@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { destinations, getDestinationById, Destination } from '../data/destinations';
@@ -10,6 +9,8 @@ import {
   Search, Tag, Globe, Plane, X, ChevronDown,
   RefreshCcw, Filter
 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const TravelBudgetPlanner: React.FC = () => {
   const { toast } = useToast();
@@ -22,12 +23,6 @@ const TravelBudgetPlanner: React.FC = () => {
   // Activity filter state
   const [filter, setFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState<boolean>(false);
-  
-  // Destinations state
-  const [filteredDestinations, setFilteredDestinations] = useState(destinations);
-  const [destinationSearchTerm, setDestinationSearchTerm] = useState('');
-  const [regionFilter, setRegionFilter] = useState<string>('all');
   
   // Results state
   const [planCreated, setPlanCreated] = useState<boolean>(false);
@@ -77,39 +72,8 @@ const TravelBudgetPlanner: React.FC = () => {
           destination.region = matchingCountry.region;
         }
       });
-      
-      // Set up filtered destinations after enhancements
-      handleDestinationFiltering();
     }
   }, [countryData]);
-  
-  // Filter destinations based on search and region
-  const handleDestinationFiltering = () => {
-    let filtered = [...destinations];
-    
-    // Apply search filter
-    if (destinationSearchTerm) {
-      filtered = filtered.filter(
-        dest => 
-          dest.name.toLowerCase().includes(destinationSearchTerm.toLowerCase()) ||
-          dest.country.toLowerCase().includes(destinationSearchTerm.toLowerCase())
-      );
-    }
-    
-    // Apply region filter
-    if (regionFilter !== 'all') {
-      filtered = filtered.filter(
-        dest => dest.region?.toLowerCase() === regionFilter.toLowerCase()
-      );
-    }
-    
-    setFilteredDestinations(filtered);
-  };
-  
-  // Update filters when search or region changes
-  useEffect(() => {
-    handleDestinationFiltering();
-  }, [destinationSearchTerm, regionFilter]);
   
   // Handle budget form submission
   const handleBudgetSubmit = (e: React.FormEvent) => {
@@ -168,15 +132,6 @@ const TravelBudgetPlanner: React.FC = () => {
     });
   };
   
-  // Get unique regions from all destinations
-  const getUniqueRegions = () => {
-    const regions = destinations
-      .map(dest => dest.region)
-      .filter((region): region is string => !!region);
-    
-    return ['all', ...new Set(regions)];
-  };
-  
   // Category colors for activities
   const categoryColors: Record<string, string> = {
     culture: 'bg-blue-100 text-blue-800',
@@ -201,227 +156,107 @@ const TravelBudgetPlanner: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Budget Form */}
           <div>
-            <div className="card backdrop-blur-sm bg-white/90 border border-gray-100 shadow-lg">
-              <h2 className="text-2xl font-bold mb-6 text-center">Plan Your Budget</h2>
-              
-              <form onSubmit={handleBudgetSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="budget" className="block mb-2 font-medium flex items-center">
-                    <DollarSign className="w-4 h-4 mr-1 text-teal" />
-                    Total Budget (USD)
-                  </label>
-                  <input
-                    type="number"
-                    id="budget"
-                    min="100"
-                    value={budget}
-                    onChange={(e) => setBudget(Number(e.target.value))}
-                    className="input-field focus:ring-teal focus:border-teal"
-                    required
-                  />
-                </div>
+            <div className="card backdrop-blur-sm bg-white/80 border border-gray-100 shadow-xl rounded-xl overflow-hidden">
+              <div className="p-6 bg-gradient-to-br from-teal/5 to-blue-500/10">
+                <h2 className="text-2xl font-bold mb-6 text-center">Plan Your Budget</h2>
                 
-                <div>
-                  <label htmlFor="destination" className="block mb-2 font-medium flex items-center">
-                    <MapPin className="w-4 h-4 mr-1 text-teal" />
-                    Destination
-                  </label>
-                  
-                  <div className="relative">
-                    <select
-                      id="destination"
-                      value={destinationId}
-                      onChange={(e) => setDestinationId(e.target.value)}
-                      className="input-field focus:ring-teal focus:border-teal pr-10"
+                <form onSubmit={handleBudgetSubmit} className="space-y-6">
+                  <div>
+                    <label htmlFor="budget" className="block mb-2 font-medium flex items-center">
+                      <DollarSign className="w-4 h-4 mr-1 text-teal" />
+                      Total Budget (USD)
+                    </label>
+                    <input
+                      type="number"
+                      id="budget"
+                      min="100"
+                      value={budget}
+                      onChange={(e) => setBudget(Number(e.target.value))}
+                      className="input-field focus:ring-teal focus:border-teal"
                       required
-                    >
-                      {filteredDestinations.map((destination) => (
-                        <option key={destination.id} value={destination.id}>
-                          {destination.name}, {destination.country}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    />
                   </div>
                   
-                  <div className="mt-2">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="relative flex-grow">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <input
-                          type="text"
-                          placeholder="Search destinations..."
-                          value={destinationSearchTerm}
-                          onChange={(e) => setDestinationSearchTerm(e.target.value)}
-                          className="input-field pl-9 py-1 text-sm focus:ring-teal focus:border-teal"
-                        />
-                        {destinationSearchTerm && (
-                          <button
-                            type="button"
-                            onClick={() => setDestinationSearchTerm('')}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                      
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
-                          className="p-2 rounded border border-gray-300 hover:bg-gray-50 text-gray-600"
-                        >
-                          <Filter className="w-4 h-4" />
-                        </button>
-                        
-                        {isFilterMenuOpen && (
-                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-100">
-                            <div className="p-2">
-                              <p className="text-xs text-gray-500 mb-1">Filter by region:</p>
-                              <div className="space-y-1">
-                                {getUniqueRegions().map((region) => (
-                                  <button
-                                    key={region}
-                                    type="button"
-                                    className={`block w-full text-left px-2 py-1 text-sm rounded ${
-                                      regionFilter === region 
-                                        ? 'bg-teal text-white' 
-                                        : 'hover:bg-gray-100 text-gray-700'
-                                    }`}
-                                    onClick={() => {
-                                      setRegionFilter(region);
-                                      setIsFilterMenuOpen(false);
-                                    }}
-                                  >
-                                    {region === 'all' ? 'All Regions' : region}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  <div>
+                    <label htmlFor="destination" className="block mb-2 font-medium flex items-center">
+                      <MapPin className="w-4 h-4 mr-1 text-teal" />
+                      Destination
+                    </label>
                     
-                    {regionFilter !== 'all' && (
-                      <div className="flex items-center gap-1 text-xs text-gray-600">
-                        <Filter className="w-3 h-3" />
-                        <span>Region: {regionFilter}</span>
-                        <button
-                          type="button"
-                          onClick={() => setRegionFilter('all')}
-                          className="ml-1 text-teal hover:underline"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                    )}
+                    <div className="relative">
+                      <select
+                        id="destination"
+                        value={destinationId}
+                        onChange={(e) => setDestinationId(e.target.value)}
+                        className="input-field focus:ring-teal focus:border-teal pr-10"
+                        required
+                      >
+                        {destinations.map((destination) => (
+                          <option key={destination.id} value={destination.id}>
+                            {destination.name}, {destination.country}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="days" className="block mb-2 font-medium flex items-center">
-                    <Calendar className="w-4 h-4 mr-1 text-teal" />
-                    Number of Days
-                  </label>
-                  <input
-                    type="number"
-                    id="days"
-                    min="1"
-                    max="30"
-                    value={days}
-                    onChange={(e) => setDays(Number(e.target.value))}
-                    className="input-field focus:ring-teal focus:border-teal"
-                    required
-                  />
-                </div>
-                
-                <button 
-                  type="submit" 
-                  className="btn-primary w-full mt-6 flex items-center justify-center gap-2 transition-all hover:shadow-lg"
-                >
-                  <Compass className="w-4 h-4" />
-                  Calculate My Budget
-                </button>
-              </form>
-            </div>
-            
-            {/* Destination Highlights */}
-            <div className="card backdrop-blur-sm bg-white/90 border border-gray-100 shadow-lg mt-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Popular Destinations</h2>
-                {isLoading && (
-                  <div className="flex items-center gap-1 text-xs text-gray-500">
-                    <RefreshCcw className="w-3 h-3 animate-spin" />
-                    Updating data...
+                  
+                  <div>
+                    <label htmlFor="days" className="block mb-2 font-medium flex items-center">
+                      <Calendar className="w-4 h-4 mr-1 text-teal" />
+                      Number of Days
+                    </label>
+                    <input
+                      type="number"
+                      id="days"
+                      min="1"
+                      max="30"
+                      value={days}
+                      onChange={(e) => setDays(Number(e.target.value))}
+                      className="input-field focus:ring-teal focus:border-teal"
+                      required
+                    />
                   </div>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                {filteredDestinations.slice(0, 4).map((destination) => (
-                  <div 
-                    key={destination.id}
-                    className="rounded-lg overflow-hidden shadow-md transition-all hover:shadow-lg hover:scale-105 cursor-pointer bg-gradient-to-b from-white to-gray-50 border border-gray-100"
-                    onClick={() => {
-                      setDestinationId(destination.id);
-                      
-                      // If on mobile, scroll to the form
-                      if (window.innerWidth < 768) {
-                        const form = document.querySelector('form');
-                        if (form) {
-                          form.scrollIntoView({ behavior: 'smooth' });
-                        }
-                      }
-                    }}
+                  
+                  <button 
+                    type="submit" 
+                    className="btn-primary w-full mt-6 flex items-center justify-center gap-2 transition-all hover:shadow-lg bg-gradient-to-r from-teal to-blue-500 text-white py-3 px-4 rounded-lg"
                   >
-                    <div className="relative h-24">
-                      <img 
-                        src={destination.imageUrl} 
-                        alt={destination.name} 
-                        className="w-full h-full object-cover"
-                      />
-                      {destination.flagUrl && (
-                        <div className="absolute top-2 right-2 w-6 h-4 rounded shadow-sm overflow-hidden">
-                          <img 
-                            src={destination.flagUrl} 
-                            alt={`Flag of ${destination.country}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-2">
-                      <h3 className="font-semibold text-sm">{destination.name}</h3>
-                      <p className="text-xs text-gray-600 flex items-center gap-1">
-                        <Globe className="w-3 h-3" />
-                        {destination.country}
-                      </p>
-                      <p className="text-xs text-teal mt-1 font-medium">
-                        From ${destination.averageCosts.accommodation.budget + 
-                              destination.averageCosts.food.budget + 
-                              destination.averageCosts.transportation.budget}/day
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                    <Compass className="w-4 h-4" />
+                    Calculate My Budget
+                  </button>
+                </form>
               </div>
               
-              {filteredDestinations.length > 4 && (
-                <button 
-                  className="text-sm text-teal hover:text-teal-600 mt-4 flex items-center justify-center w-full"
-                  onClick={() => {
-                    const form = document.querySelector('form');
-                    if (form) {
-                      form.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                >
-                  View all {filteredDestinations.length} destinations
-                  <ChevronDown className="w-4 h-4 ml-1" />
-                </button>
-              )}
+              {/* Trip Options Section */}
+              <div className="p-4 border-t border-gray-100 bg-gray-50/80">
+                <Collapsible>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-700 p-2 hover:bg-gray-100 rounded-md">
+                    <span>Trip Options</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 pt-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="guided" />
+                      <label htmlFor="guided" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Guided tours included
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="insurance" />
+                      <label htmlFor="insurance" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Travel insurance
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="family" />
+                      <label htmlFor="family" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Family-friendly activities
+                      </label>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
             </div>
           </div>
           
@@ -429,7 +264,7 @@ const TravelBudgetPlanner: React.FC = () => {
           <div className="md:col-span-2" id="results-section">
             {planCreated && selectedDestination ? (
               <>
-                <div className="border-l-4 border-teal px-4 py-3 bg-teal/5 mb-8 rounded-r-lg shadow-sm">
+                <div className="border-l-4 border-teal px-4 py-3 bg-gradient-to-r from-teal/5 to-blue-500/5 mb-8 rounded-r-lg shadow-md">
                   <h2 className="text-2xl font-bold flex items-center gap-2">
                     <Plane className="w-5 h-5 text-teal" />
                     Your Trip to {selectedDestination.name}
@@ -447,135 +282,137 @@ const TravelBudgetPlanner: React.FC = () => {
                 />
                 
                 {/* Activity Recommendations */}
-                <div className="card backdrop-blur-sm bg-white/90 border border-gray-100 shadow-lg mt-8">
-                  <h2 className="text-2xl font-bold mb-6 text-center bg-gradient-to-r from-teal to-blue-500 bg-clip-text text-transparent">Recommended Activities</h2>
-                  
-                  <div className="mb-6">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search activities..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="input-field pl-10 focus:ring-teal focus:border-teal"
-                      />
+                <div className="card backdrop-blur-sm bg-white/80 border border-gray-100 shadow-xl rounded-xl overflow-hidden mt-8">
+                  <div className="p-6 bg-gradient-to-br from-teal/5 to-blue-500/10">
+                    <h2 className="text-2xl font-bold mb-6 text-center bg-gradient-to-r from-teal to-blue-500 bg-clip-text text-transparent">Recommended Activities</h2>
+                    
+                    <div className="mb-6">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search activities..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="input-field pl-10 focus:ring-teal focus:border-teal"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    <button
-                      onClick={() => setFilter('all')}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        filter === 'all' 
-                          ? 'bg-navy text-white shadow-md' 
-                          : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                      }`}
-                    >
-                      All
-                    </button>
-                    <button
-                      onClick={() => setFilter('culture')}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        filter === 'culture' 
-                          ? 'bg-blue-600 text-white shadow-md' 
-                          : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                      }`}
-                    >
-                      Culture
-                    </button>
-                    <button
-                      onClick={() => setFilter('nature')}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        filter === 'nature' 
-                          ? 'bg-green-600 text-white shadow-md' 
-                          : 'bg-green-100 text-green-800 hover:bg-green-200'
-                      }`}
-                    >
-                      Nature
-                    </button>
-                    <button
-                      onClick={() => setFilter('adventure')}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        filter === 'adventure' 
-                          ? 'bg-orange-600 text-white shadow-md' 
-                          : 'bg-orange-100 text-orange-800 hover:bg-orange-200'
-                      }`}
-                    >
-                      Adventure
-                    </button>
-                    <button
-                      onClick={() => setFilter('relaxation')}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        filter === 'relaxation' 
-                          ? 'bg-purple-600 text-white shadow-md' 
-                          : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-                      }`}
-                    >
-                      Relaxation
-                    </button>
-                    <button
-                      onClick={() => setFilter('food')}
-                      className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        filter === 'food' 
-                          ? 'bg-red-600 text-white shadow-md' 
-                          : 'bg-red-100 text-red-800 hover:bg-red-200'
-                      }`}
-                    >
-                      Food
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {getFilteredActivities().length > 0 ? (
-                      getFilteredActivities().map((activity, index) => {
-                        const activityBudget = budget * 0.15;
-                        const isAffordable = activity.cost <= activityBudget;
-                        
-                        return (
-                          <div 
-                            key={index} 
-                            className={`p-4 rounded-lg border transition-all ${
-                              isAffordable
-                                ? 'border-teal/20 bg-gradient-to-r from-teal/5 to-blue-500/5 shadow-sm hover:shadow' 
-                                : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-                            }`}
-                          >
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h3 className="font-medium text-lg">{activity.name}</h3>
-                                <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
-                                <div className="flex items-center mt-2 gap-2">
-                                  <span className={`px-2 py-1 rounded-full text-xs ${categoryColors[activity.category]}`}>
-                                    {activity.category.charAt(0).toUpperCase() + activity.category.slice(1)}
-                                  </span>
+                    
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      <button
+                        onClick={() => setFilter('all')}
+                        className={`px-4 py-2 rounded-full text-sm transition-all ${
+                          filter === 'all' 
+                            ? 'bg-navy text-white shadow-md' 
+                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        }`}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setFilter('culture')}
+                        className={`px-4 py-2 rounded-full text-sm transition-all ${
+                          filter === 'culture' 
+                            ? 'bg-blue-600 text-white shadow-md' 
+                            : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                        }`}
+                      >
+                        Culture
+                      </button>
+                      <button
+                        onClick={() => setFilter('nature')}
+                        className={`px-4 py-2 rounded-full text-sm transition-all ${
+                          filter === 'nature' 
+                            ? 'bg-green-600 text-white shadow-md' 
+                            : 'bg-green-100 text-green-800 hover:bg-green-200'
+                        }`}
+                      >
+                        Nature
+                      </button>
+                      <button
+                        onClick={() => setFilter('adventure')}
+                        className={`px-4 py-2 rounded-full text-sm transition-all ${
+                          filter === 'adventure' 
+                            ? 'bg-orange-600 text-white shadow-md' 
+                            : 'bg-orange-100 text-orange-800 hover:bg-orange-200'
+                        }`}
+                      >
+                        Adventure
+                      </button>
+                      <button
+                        onClick={() => setFilter('relaxation')}
+                        className={`px-4 py-2 rounded-full text-sm transition-all ${
+                          filter === 'relaxation' 
+                            ? 'bg-purple-600 text-white shadow-md' 
+                            : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                        }`}
+                      >
+                        Relaxation
+                      </button>
+                      <button
+                        onClick={() => setFilter('food')}
+                        className={`px-4 py-2 rounded-full text-sm transition-all ${
+                          filter === 'food' 
+                            ? 'bg-red-600 text-white shadow-md' 
+                            : 'bg-red-100 text-red-800 hover:bg-red-200'
+                        }`}
+                      >
+                        Food
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {getFilteredActivities().length > 0 ? (
+                        getFilteredActivities().map((activity, index) => {
+                          const activityBudget = budget * 0.15;
+                          const isAffordable = activity.cost <= activityBudget;
+                          
+                          return (
+                            <div 
+                              key={index} 
+                              className={`p-4 rounded-lg border transition-all ${
+                                isAffordable
+                                  ? 'border-teal/20 bg-gradient-to-r from-teal/5 to-blue-500/5 shadow-sm hover:shadow' 
+                                  : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                              }`}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h3 className="font-medium text-lg">{activity.name}</h3>
+                                  <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
+                                  <div className="flex items-center mt-2 gap-2">
+                                    <span className={`px-2 py-1 rounded-full text-xs ${categoryColors[activity.category]}`}>
+                                      {activity.category.charAt(0).toUpperCase() + activity.category.slice(1)}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="text-right">
-                                <span className={`font-bold text-lg ${
-                                  isAffordable ? 'text-teal' : 'text-gray-400'
-                                }`}>
-                                  ${activity.cost}
-                                </span>
-                                <div className="mt-1">
-                                  {activity.cost === 0 ? (
-                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Free</span>
-                                  ) : isAffordable ? (
-                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Within Budget</span>
-                                  ) : (
-                                    <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">Over Budget</span>
-                                  )}
+                                <div className="text-right">
+                                  <span className={`font-bold text-lg ${
+                                    isAffordable ? 'text-teal' : 'text-gray-400'
+                                  }`}>
+                                    ${activity.cost}
+                                  </span>
+                                  <div className="mt-1">
+                                    {activity.cost === 0 ? (
+                                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Free</span>
+                                    ) : isAffordable ? (
+                                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Within Budget</span>
+                                    ) : (
+                                      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">Over Budget</span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        No activities found matching your criteria.
-                      </div>
-                    )}
+                          );
+                        })
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          No activities found matching your criteria.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </>
@@ -602,7 +439,7 @@ const TravelBudgetPlanner: React.FC = () => {
                     </p>
                   ) : (
                     <p className="text-sm text-teal">
-                      {filteredDestinations.length} destinations available for planning
+                      {destinations.length} destinations available for planning
                     </p>
                   )}
                 </div>
