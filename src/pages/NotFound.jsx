@@ -1,35 +1,20 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
+import { Home } from "lucide-react";
 
 const NotFound = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-teal/5 p-4">
-      <div className="text-center max-w-md">
-        <h1 className="text-6xl font-bold mb-8 text-teal">404</h1>
-        <h2 className="text-2xl font-semibold mb-4">Page Not Found</h2>
-        <p className="text-gray-600 mb-8">
-          The page you are looking for doesn't exist or has been moved.
-        </p>
-        <Link
-          to="/"
-          className="btn-primary inline-flex items-center gap-2"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Back to Home
-        </Link>
-      </div>
+    <div className="flex flex-col h-[calc(100vh-2rem)] rounded-xl overflow-hidden backdrop-blur-md bg-purple-900/20 border border-white/10 justify-center items-center">
+      <h1 className="text-5xl font-mono text-white mb-4">404</h1>
+      <p className="text-white/70 mb-8">Page not found</p>
+      <Link
+        to="/"
+        className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-md text-white hover:bg-white/20 transition-colors"
+      >
+        <Home size={18} />
+        Return Home
+      </Link>
     </div>
   );
 };

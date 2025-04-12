@@ -82,7 +82,7 @@
   }
 
   body {
-    @apply bg-sand text-navy font-sans;
+    @apply bg-background text-foreground font-sans overflow-hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -106,28 +106,33 @@
   }
 }
 
-@layer components {
-  .btn-primary {
-    @apply bg-teal text-white hover:bg-teal/90 font-medium px-4 py-2 rounded-md transition-colors;
+@layer utilities {
+  .retro-text {
+    font-family: 'VT323', monospace;
+    letter-spacing: 0.05em;
   }
-
-  .btn-secondary {
-    @apply bg-orange text-white hover:bg-orange/90 font-medium px-4 py-2 rounded-md transition-colors;
+  
+  .sunset-gradient {
+    background: linear-gradient(to bottom, #ff512f, #dd2476);
   }
-
-  .card {
-    @apply bg-white rounded-lg shadow-md p-6;
-  }
-
-  .input-field {
-    @apply border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-teal;
+  
+  .glass-effect {
+    @apply backdrop-blur-md bg-white/10 border border-white/20;
   }
 }
 
-.gradient-bg {
-  background: linear-gradient(135deg, #4ecdc4 0%, #ffe66d 100%);
+/* Additional global styles */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-.shadow-custom {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+#root {
+  display: flex;
+  flex-direction: column;
 }
+
+/* Add a custom font for the retro text */
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
