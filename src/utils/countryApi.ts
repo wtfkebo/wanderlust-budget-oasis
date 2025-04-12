@@ -54,7 +54,7 @@ export const formatCurrency = (amount: number, countryData: CountryInfo | undefi
   return `${symbol}${amount.toLocaleString()}`;
 };
 
-// Add Country Type for type safety in the application
+// Export CountryType interface that matches the properties we're using
 export interface CountryType {
   currency?: string;
   currencyCode?: string;
@@ -65,4 +65,10 @@ export interface CountryType {
   population?: number;
   region?: string;
   exchangeRate?: number;
+}
+
+// Update the destinations.ts file to include these properties in the Destination interface
+// This is a hack to extend the Destination interface from another file
+declare module '../data/destinations' {
+  interface Destination extends CountryType {}
 }

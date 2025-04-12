@@ -38,9 +38,8 @@ export const formatCurrency = (amount, countryData) => {
   return `${symbol}${amount.toLocaleString()}`;
 };
 
-// Add Country Type for type safety in the application
+// Exporting CountryType object to document properties we're using
 export const CountryType = {
-  // This is just for documentation in JSX, not enforced at runtime
   currency: '',
   currencyCode: '',
   currencySymbol: '',
